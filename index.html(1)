@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolarVis Nusantara v1.0 - Smart Solar Microgrid HMI</title>
+    <style>
+        /* --- DESIGN SYSTEM & SYSTEM FONTS --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background-color: #0b0e14;
+            color: #c9d1d9;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .app-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* --- SIDEBAR NAVIGASI (WAJIB INTERAKTIF) --- */
+        .sidebar {
+            width: 260px;
+            background-color: #11151c;
+            border-right: 1px solid #21262d;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .sidebar-brand {
+            padding: 24px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #21262d;
+        }
+        .brand-logo {
+            width: 28px;
+            height: 28px;
+            background-color: #f9826c;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(249, 130, 108, 0.4);
+        }
+        .sidebar-brand h2 {
+            font-size: 14px;
+            color: #f0f6fc;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+        .sidebar-brand p {
+            font-size: 9px;
+            color: #8b949e;
+            font-weight: 600;
+        }
+        .sidebar-menu {
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+        .menu-item {
+            background: none;
+            border: none;
+            color: #8b949e;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13.5px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+        .menu-item:hover {
+            background-color: #1f242c;
+            color: #c9d1d9;
+        }
+        .menu-item.active {
+            background-color: #1f6feb;
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 0 12px rgba(31, 111, 235, 0.3);
+        }
+        .badge {
+            background-color: #f85149;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid #21262d;
+            background-color: #0b0e14;
+        }
+        .status-system-mini {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .indicator-dot.green { background-color: #3fb950; box-shadow: 0 0 10px #3fb950; }
+        .indicator-dot.red { background-color: #f85149; box-shadow: 0 0 10px #f85149; }
+        .status-title { font-size: 9px; color: #8b949e; letter-spacing: 0.5px; }
+        .status-value { font-size: 12px; font-weight: bold; color: #f0f6fc; }
+        .system-time { font-size: 11px; color: #58a6ff; font-family: monospace; }
+
+        /* --- AREA KONTEN UTAMA --- */
+        .main-content {
+            flex-grow: 1;
+            background-color: #0b0e14;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #21262d;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .main-header h1 {
+            font-size: 18px;
+            color: #8b949e;
+            font-weight: 400;
+        }
+        .system-clock {
+            font-size: 13px;
+            color: #c9d1d9;
+            font-family: monospace;
+            background: #11151c;
+            padding: 6px 14px;
+            border-radius: 4px;
+            border: 1px solid #21262d;
+        }
+        .page-content {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .page-content.active {
+            display: flex;
+        }
+        .page-title-block h2 {
+            font-size: 22px;
+            color: #f0f6fc;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .page-title-block p {
+            font-size: 13px;
+            color: #8b949e;
+            margin-top: 4px;
+        }
+
+        /* --- SUMMARY CARDS --- */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+        .card {
+            background-color: #11151c;
+            border: 1px solid #21262d;
+            padding: 18px;
+            border-radius: 6px;
+        }
+        .card h3 { font-size: 11px; color: #8b949e; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px; }
+        .card-value { font-size: 24px; font-weight: bold; color: #f0f6fc; }
+        .card-value .unit { font-size: 14px; font-weight: 400; color: #8b949e; }
+        .card-sub { font-size: 11px; color: #8b949e; margin-top: 6px; }
+        .card-purple { border-left: 4px solid #bc8cff; }
+        .card-pink { border-left: 4px solid #ff7b72; }
+        .card-cyan { border-left: 4px solid #39c5cf; }
+        .card-orange { border-left: 4px solid #f2cc60; }
+        .card-green { border-left: 4px solid #56d364; }
+
+        /* --- DIAGRAM ALIRAN HMI --- */
+        .hmi-container {
+            background-color: #11151c;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            padding: 24px;
+        }
+        .hmi-sub { font-size: 12px; color: #8b949e; margin-bottom: 30px; }
+        .hmi-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+        }
+        .hmi-column {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            width: 220px;
+        }
+        .hmi-node {
+            background-color: #0b0e14;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 16px;
+            text-align: center;
+        }
+        .hmi-node h4 { font-size: 12px; color: #8b949e; margin-bottom: 6px; text-transform: uppercase; }
+        .node-val { font-size: 18px; font-weight: bold; color: #f0f6fc; }
+        .node-sub { font-size: 10px; color: #8b949e; margin-top: 4px; }
+        #node-pv { border-left: 3px solid #56d364; }
+        #node-pln { border-left: 3px solid #8b949e; }
+        .border-orange { border-left: 3px solid #f2cc60; }
+        .border-gray { border-left: 3px solid #484f58; }
+        
+        .hmi-center { width: 180px; }
+        .ems-block {
+            background-color: #0b0e14;
+            border: 2px solid #58a6ff;
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.15);
+            border-radius: 6px;
+            padding: 35px 10px;
+            text-align: center;
+        }
+        .ems-block h2 { color: #58a6ff; font-size: 26px; letter-spacing: 2px; font-weight: 700; }
+        .ems-block p { color: #8b949e; font-size: 9px; text-transform: uppercase; margin-top: 6px; font-weight: 600; }
+        
+        .hmi-lines {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 85px;
+            padding: 0 12px;
+        }
+        .line-container { height: 2px; background: #21262d; position: relative; }
+        .line { height: 100%; width: 100%; transition: all 0.3s ease; }
+        .green-glow { background: #3fb950; box-shadow: 0 0 10px #3fb950; }
+        .blue-glow { background: #58a6ff; box-shadow: 0 0 10px #58a6ff; }
+        .orange-glow { background: #f2cc60; box-shadow: 0 0 10px #f2cc60; }
+        .gray-glow { background: #484f58; }
+        
+        /* --- TESTING CONTROL SLIDER --- */
+        .simulation-control {
+            margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid #21262d;
+        }
+        .simulation-control label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        #battery-slider {
+            width: 100%;
+            max-width: 400px;
+            accent-color: #58a6ff;
+            cursor: pointer;
+        }
+        .hint { font-size: 11px; color: #ff7b72; margin-top: 6px; font-weight: 500; }
+
+        /* --- TABEL DETAIL INDUSTRIAL --- */
+        .panel-detail { background: #11151c; border: 1px solid #21262d; border-radius: 6px; padding: 24px; }
+        .hmi-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        .hmi-table th { background-color: #0b0e14; color: #f0f6fc; padding: 14px; border: 1px solid #21262d; font-weight: 600; }
+        .hmi-table td { padding: 14px; border: 1px solid #21262d; }
+        .hmi-table tr:nth-child(even) { background-color: #141923; }
+
+        /* --- ALARM PANEL --- */
+        .alarm-banner-empty {
+            background-color: #141923;
+            border: 1px dashed #30363d;
+            color: #8b949e;
+            padding: 35px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .alarm-item { padding: 20px; border-radius: 4px; margin-bottom: 16px; }
+        .alarm-item.id-critical { background-color: rgba(248, 81, 73, 0.07); border: 1px solid #f85149; }
+        .alarm-header-item { color: #ff7b72; font-weight: bold; font-size: 14px; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .alarm-body-item { font-size: 13px; color: #c9d1d9; line-height: 1.6; }
+        
+        /* --- NOTIFIKASI TOAST POPUP --- */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #181212;
+            border: 1px solid #f85149;
+            padding: 16px 22px;
+            border-radius: 4px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+            z-index: 999;
+        }
+        .toast-title { color: #ff7b72; font-weight: bold; font-size: 12px; display: block; margin-bottom: 4px; letter-spacing: 0.5px;}
+        #toast-desc { font-size: 12px; color: #f0f6fc;}
+        
+        .hidden { display: none !important; }
+        
+        /* --- VISUAL BREATHING SPACE KANAN BAWAH (Koleksi UI/UX) --- */
+        .visual-breathing-space {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo"></div>
+                <div>
+                    <h2>SolarVis Nusantara</h2>
+                    <p>PROTO-HMI MICROGRID v1.0</p>
+                </div>
+            </div>
+            <nav class="sidebar-menu">
+                <button class="menu-item active" onclick="switchPage(event, 'dashboard')">Dashboard Utama</button>
+                <button class="menu-item" onclick="switchPage(event, 'produksi')">Produksi Panel Surya</button>
+                <button class="menu-item" onclick="switchPage(event, 'baterai')">Kapasitas Baterai</button>
+                <button class="menu-item" onclick="switchPage(event, 'pln')">Jaringan PLN</button>
+                <button class="menu-item" onclick="switchPage(event, 'log')">Data Log</button>
+                <button class="menu-item" onclick="switchPage(event, 'alarm')">Alarm <span id="alarm-badge" class="badge hidden">1</span></button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-system-mini">
+                    <span class="indicator-dot green" id="mini-indicator"></span>
+                    <div>
+                        <p class="status-title">SISTEM STATUS</p>
+                        <p class="status-value" id="mini-status-text">NORMAL</p>
+                    </div>
+                </div>
+                <div class="system-time" id="sidebar-time">--:--:-- WIB</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Solar Admin</h1>
+                <div class="header-right"><div class="system-clock" id="header-clock">--:--:-- WIB</div></div>
+            </header>
+
+            <section id="page-dashboard" class="page-content active">
+                <div class="page-title-block">
+                    <h2>DASHBOARD OVERVIEW</h2>
+                    <p>Ringkasan kondisi sistem secara real-time</p>
+                </div>
+                
+                <div class="summary-grid">
+                    <div class="card card-purple"><h3>Total Produksi PV</h3><div class="card-value"><span id="card-pv-day">3.62</span> <span class="unit">kW</span></div><p class="card-sub">Hari ini: 18.45 kWh</p></div>
+                    <div class="card card-pink" id="card-pln-status"><h3>Daya dari PLN</h3><div class="card-value"><span id="card-pln-day">0.00</span> <span class="unit">kW</span></div><p class="card-sub" id="card-pln-sub">Standby</p></div>
+                    <div class="card card-cyan"><h3>Baterai (SoC)</h3><div class="card-value"><span id="card-bat-per">58</span> <span class="unit">%</span></div><p class="card-sub">Kapasitas: 2.90 kWh / 5.00 kWh</p></div>
+                    <div class="card card-orange"><h3>Total Beban</h3><div class="card-value">2.87 <span class="unit">kW</span></div><p class="card-sub">Hari ini: 14.32 kWh</p></div>
+                    <div class="card card-green" id="card-sys-status"><h3>Status Sistem</h3><div class="card-value" id="card-status-text">NORMAL</div><p class="card-sub">Mode: OTOMATIS</p></div>
+                </div>
+
+                <div class="hmi-container">
+                    <h3>ALIRAN DAYA REAL-TIME</h3><p class="hmi-sub">Monitoring aliran daya sistem secara real-time</p>
+                    <div class="hmi-diagram">
+                        <div class="hmi-column">
+                            <div class="hmi-node" id="node-pv"><h4>PV Array</h4><div class="node-val"><span id="flow-pv">3.62</span> kW</div><p class="node-sub">Produksi</p></div>
+                            <div class="hmi-node" id="node-pln"><h4>PLN Grid</h4><div class="node-val"><span id="flow-pln">0.00</span> kW</div><p class="node-sub" id="flow-pln-sub">Standby</p></div>
+                        </div>
+                        <div class="hmi-lines">
+                            <div class="line-container"><div class="line line-horizontal green-glow" id="line-pv"></div></div>
+                            <div class="line-container"><div class="line line-horizontal" id="line-pln"></div></div>
+                        </div>
+                        <div class="hmi-center"><div class="ems-block"><h2>EMS</h2><p>Energy Management System</p></div></div>
+                        <div class="hmi-lines">
+                            <div class="line-container"><div class="line line-horizontal orange-glow"></div></div>
+                            <div class="line-container"><div class="line line-horizontal gray-glow"></div></div>
+                        </div>
+                        <div class="hmi-column">
+                            <div class="hmi-node border-orange"><h4>Beban Rumah</h4><div class="node-val">2.87 kW</div><p class="node-sub">Total Beban</p></div>
+                            <div class="hmi-node border-gray"><h4>Beban Non-Kritis</h4><div class="node-val">0.35 kW</div><p class="node-sub">Dapat Diputus</p></div>
+                        </div>
+                    </div>
+                    
+                    <div class="simulation-control">
+                        <label for="battery-slider">Simulasi Kapasitas Baterai: <b id="slider-val">58%</b></label>
+                        <input type="range" id="battery-slider" min="10" max="100" value="58">
+                        <p class="hint">*Geser ke bawah 40% untuk melihat Otomasi Switching & Notifikasi.</p>
+                    </div>
+                </div>
+                <div id="toast-notification" class="toast hidden"><span class="toast-title">SISTEM SWITCHING</span><p id="toast-desc">Baterai &le; 40%. Sistem otomatis beralih ke sumber PLN!</p></div>
+            </section>
+
+            <section id="page-produksi" class="page-content">
+                <div class="page-title-block"><h2>PRODUKSI PANEL SURYA</h2><p>Detail parameter performa PV Array</p></div>
+                <div class="panel-detail">
+                    <table class="hmi-table">
+                        <thead><tr><th>Parameter</th><th>Nilai Real-time</th><th>Satuan</th></tr></thead>
+                        <tbody>
+                            <tr><td>Daya Output Realtime</td><td>3.62</td><td>kW</td></tr>
+                            <tr><td>Tegangan String A</td><td>385.2</td><td>Volt</td></tr>
+                            <tr><td>Arus String A</td><td>9.4</td><td>Ampere</td></tr>
+                            <tr><td>Efisiensi Inverter</td><td>97.8</td><td>%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="page-baterai" class="page-content">
+                <div class="page-title-block"><h2>KAPASITAS BATERAI (SoC)</h2><p>Status penyimpanan daya Energy Storage System (ESS)</p></div>
+                <div class="panel-detail">
+                    <table class="hmi-table">
+                        <thead><tr><th>Parameter</th><th>Nilai Real-time</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td>State of Charge (SoC)</td><td><span id="tab-bat-per">58%</span></td><td>Optimal</td></tr>
+                            <tr><td>Temperatur Cell</td><td>32.4 °C</td><td>Normal</td></tr>
+                            <tr><td>Siklus Pengisian (Cycle)</td><td>142</td><td>Sehat</td></tr>
+                            <tr><td>Batas Minimum Switching</td><td>40%</td><td>Sistem Pengaman</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="page-pln" class="page-content">
+                <div class="page-title-block"><h2>JARINGAN PLN GRID</h2><p>Integrasi suplai daya cadangan konvensional</p></div>
+                <div class="panel-detail">
+                    <table class="hmi-table">
+                        <thead><tr><th>Parameter</th><th>Nilai</th><th>Keterangan</th></tr></thead>
+                        <tbody>
+                            <tr><td>Status Koneksi Grid</td><td><span id="tab-pln-status">Terhubung</span></td><td>Synchronized</td></tr>
+                            <tr><td>Tegangan Fasa</td><td>221.5 V</td><td>Stabil</td></tr>
+                            <tr><td>Frekuensi Jaringan</td><td>50.02 Hz</td><td>Normal</td></tr>
+                            <tr><td>Daya Impor Jaringan</td><td><span id="tab-pln-power">0.00 kW</span></td><td>Standby</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="page-log" class="page-content">
+                <div class="page-title-block"><h2>DATA LOG HISTORIS</h2><p>Catatan aktivitas pemindahan daya secara berkala</p></div>
+                <div class="panel-detail">
+                    <table class="hmi-table">
+                        <thead><tr><th>Waktu</th><th>Kategori</th><th>Deskripsi Peristiwa</th></tr></thead>
+                        <tbody id="log-table-body">
+                            <tr><td>20:30:15</td><td>SISTEM</td><td>Inisialisasi SolarVis Nusantara v1.0 Berhasil.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="page-alarm" class="page-content">
+                <div class="page-title-block"><h2>PANEL ALARM & PERINGATAN</h2><p>Daftar indikasi kritis sistem kelistrikan hybrid</p></div>
+                <div id="alarm-container-box">
+                    <div class="alarm-banner-empty" id="alarm-empty-text">Tidak ada alarm aktif saat ini. Sistem berjalan normal.</div>
+                    <div class="alarm-item id-critical hidden" id="alarm-critical-box">
+                        <div class="alarm-header-item">CRITICAL ALARM: BATERAI LOW</div>
+                        <div class="alarm-body-item">Kapasitas kritis terdeteksi di bawah batas minimum (40%). ATS otomatis memindahkan beban ke jaringan utama PLN Grid. Periksa modul pengisian solar!</div>
+                    </div>
+                </div>
+            </section>
+            
+            <div class="visual-breathing-space"></div>
+        </main>
+    </div>
+
+    <script>
+        // --- LOGIKA PERPINDAHAN HALAMAN SIDEBAR ---
+        function switchPage(event, pageId) {
+            const pages = document.querySelectorAll('.page-content');
+            pages.forEach(page => page.classList.remove('active'));
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+            
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) targetPage.classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- DOM ELEMENTS ---
+        const batterySlider = document.getElementById('battery-slider');
+        const sliderValDisplay = document.getElementById('slider-val');
+        const cardBatPer = document.getElementById('card-bat-per');
+        const cardPlnStatus = document.getElementById('card-pln-status');
+        const cardPlnSub = document.getElementById('card-pln-sub');
+        const cardSysStatus = document.getElementById('card-sys-status');
+        const cardStatusText = document.getElementById('card-status-text');
+        const nodePln = document.getElementById('node-pln');
+        const flowPln = document.getElementById('flow-pln');
+        const flowPlnSub = document.getElementById('flow-pln-sub');
+        const linePln = document.getElementById('line-pln');
+        const miniIndicator = document.getElementById('mini-indicator');
+        const miniStatusText = document.getElementById('mini-status-text');
+        const alarmBadge = document.getElementById('alarm-badge');
+        const alarmEmptyText = document.getElementById('alarm-empty-text');
+        const alarmCriticalBox = document.getElementById('alarm-critical-box');
+        const logTableBody = document.getElementById('log-table-body');
+        const toastNotification = document.getElementById('toast-notification');
+        let isPlnSwitched = false;
+
+        // --- INTERAKSI SLIDER & OTOMASI SWITCHING (LOGIKA 40%) ---
+        batterySlider.addEventListener('input', (e) => {
+            const batteryValue = parseInt(e.target.value);
+            sliderValDisplay.innerText = batteryValue + '%';
+            cardBatPer.innerText = batteryValue;
+            document.getElementById('tab-bat-per').innerText = batteryValue + '%';
+
+            if (batteryValue <= 40) {
+                // Berubah ke Status Alarm / Sumber PLN Aktif
+                cardSysStatus.style.borderLeft = "4px solid #ff7b72";
+                cardStatusText.innerText = "ALARM / PLN";
+                miniIndicator.className = "indicator-dot red";
+                miniStatusText.innerText = "ALARM / PLN";
+                
+                cardPlnStatus.style.borderLeft = "4px solid #58a6ff";
+                cardPlnSub.innerText = "MENYUPLAI BEBAN";
+                document.getElementById('card-pln-day').innerText = "1.25";
+                
+                nodePln.style.borderLeft = "3px solid #58a6ff";
+                flowPln.innerText = "1.25";
+                flowPlnSub.innerText = "Aktif (Impor)";
+                linePln.className = "line line-horizontal blue-glow";
+                
+                document.getElementById('tab-pln-status').innerText = "Aktif Terhubung";
+                document.getElementById('tab-pln-power').innerText = "1.25 kW";
+                
+                alarmBadge.classList.remove('hidden');
+                alarmEmptyText.classList.add('hidden');
+                alarmCriticalBox.classList.remove('hidden');
+
+                if (!isPlnSwitched) {
+                    toastNotification.classList.remove('hidden');
+                    addLogData("ALARM", "Kapasitas baterai <= 40%. Sistem ATS otomatis dialihkan ke PLN Grid.");
+                    isPlnSwitched = true;
+                    setTimeout(() => { toastNotification.classList.add('hidden'); }, 4000);
+                }
+            } else {
+                // Kembali Ke Status Normal / Mandiri Solar
+                cardSysStatus.style.borderLeft = "4px solid #56d364";
+                cardStatusText.innerText = "NORMAL";
+                miniIndicator.className = "indicator-dot green";
+                miniStatusText.innerText = "NORMAL";
+                
+                cardPlnStatus.style.borderLeft = "4px solid #ff7b72";
+                cardPlnSub.innerText = "Standby";
+                document.getElementById('card-pln-day').innerText = "0.00";
+                
+                nodePln.style.borderLeft = "3px solid #8b949e";
+                flowPln.innerText = "0.00";
+                flowPlnSub.innerText = "Standby";
+                linePln.className = "line line-horizontal";
+                
+                document.getElementById('tab-pln-status').innerText = "Terhubung";
+                document.getElementById('tab-pln-power').innerText = "0.00 kW";
+                
+                alarmBadge.classList.add('hidden');
+                alarmEmptyText.classList.remove('hidden');
+                alarmCriticalBox.classList.add('hidden');
+
+                if (isPlnSwitched) {
+                    addLogData("SISTEM", "Baterai optimal > 40%. Sistem kembali menggunakan suplai Mandiri Solar.");
+                    isPlnSwitched = false;
+                }
+            }
+        });
+
+        function addLogData(kategori, deskripsi) {
+            const waktuSekarang = new Date().toLocaleTimeString('id-ID');
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${waktuSekarang}</td><td>${kategori}</td><td>${deskripsi}</td>`;
+            logTableBody.insertBefore(row, logTableBody.firstChild);
+        }
+
+        // --- JAM REAL-TIME INTERNAL ---
+        function updateClock() {
+            const sekarang = new Date();
+            const jam = sekarang.toLocaleTimeString('id-ID') + " WIB";
+            const opsiTanggal = { year: 'numeric', month: 'long', day: 'numeric' };
+            const tanggal = sekarang.toLocaleDateString('id-ID', opsiTanggal);
+            document.getElementById('sidebar-time').innerText = jam;
+            document.getElementById('header-clock').innerText = `${jam} | ${tanggal}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>
